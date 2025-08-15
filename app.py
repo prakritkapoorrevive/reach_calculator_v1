@@ -1,8 +1,56 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
 
-st.title("ZIP Finder & Reach Calculator (Original Logic)")
-st.write("This app runs the exact same logic from the original notebook.")
-st.warning("Inputs are currently hardcoded from the notebook; update variables inside the code for different runs.")
+st.set_page_config(page_title="Reach Calculator", layout="wide")
+st.title("Reach Calculator (Original Logic)")
+
+# --- Load Data ---
+@st.cache_data
+def load_data():
+    census = pd.read_csv("census_data_cleaned.csv")
+    zip_df = pd.read_csv("zip_data_trimmed.csv")
+    deals = pd.read_csv("deals_data_cleaned.csv")
+    return census, zip_df, deals
+
+census, zip_df, deals = load_data()
+
+# Sidebar inputs
+st.sidebar.header("Inputs")
+target_zips = st.sidebar.text_area("Target ZIPs (comma-separated)", "10001, 10002")
+target_zips = [z.strip() for z in target_zips.split(",") if z.strip()]
+target_gender = st.sidebar.selectbox("Target Gender", ["Male", "Female", "All"])
+target_age = st.sidebar.number_input("Target Age", min_value=0, max_value=120, value=30)
+campaign_budget = st.sidebar.number_input("Campaign Budget", min_value=0, value=10000)
+aic_size = st.sidebar.number_input("AIC Size", min_value=1, value=25)
+second_param = st.sidebar.number_input("Second Param", min_value=0, value=50)
+run_btn = st.sidebar.button("Run Calculation")
+
+# Run
+if run_btn:
+    try:
+        # Call your original calculate_reach logic
+        result_df, zip_result_df, share = calculate_reach(
+            deals, census, target_zips, target_gender, target_age,
+            campaign_budget, aic_size=aic_size, second_param=second_param
+        )
+
+        tab1, tab2, tab3 = st.tabs(["Summary", "ZIP Details", "Share"])
+        with tab1:
+            st.subheader("Summary")
+            st.dataframe(result_df)
+            st.download_button("Download Summary CSV", result_df.to_csv(index=False), "summary.csv", "text/csv")
+        with tab2:
+            st.subheader("ZIP Details")
+            st.dataframe(zip_result_df)
+            st.download_button("Download ZIP Details CSV", zip_result_df.to_csv(index=False), "zip_details.csv", "text/csv")
+        with tab3:
+            st.subheader("Share Data")
+            st.dataframe(share)
+            st.download_button("Download Share CSV", share.to_csv(index=False), "share.csv", "text/csv")
+
+    except Exception as e:
+        st.error(f"Error running calculation: {e}")
 
 
 pd.set_option('display.float_format', '{:,.2f}'.format)

@@ -1,3 +1,9 @@
-# ZIP Finder App (Original Logic)
+# Reach Calculator Streamlit App
 
-This is the original notebook logic wrapped for Streamlit. Inputs are currently hardcoded in the code; adjust them in `app.py` to change.
+Runs the original reach_calculator_v1_test logic as a Streamlit app.
+All CSVs are preloaded so it works instantly on Streamlit Cloud.
+## How to run locally:
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
