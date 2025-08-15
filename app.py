@@ -54,51 +54,37 @@ def zips_within_radius_from_zip(origin_zip, radius_miles):
 
     return out
 
-def get_age_bracket(age):
-    if age < 18:
-        return f"gender_Under 18"
-    elif 18 <= age <= 24:
-        return f"gender_18-24"
-    elif 25 <= age <= 34:
-        return f"gender_25-34"
-    elif 35 <= age <= 44:
-        return f"gender_35-44"
-    elif 45 <= age <= 54:
-        return f"gender_45-54"
-    elif 55 <= age <= 64:
-        return f"gender_55-64"
-    else:
-        return f"gender_65+"
-
 # --- Main Calculation ---
-def calculate_reach(deals_df, census_df, target_zips, target_gender=None, target_age=None, target_budget=None, aic_size=None, amazon_population_size=None):
+def calculate_reach(deals_df, census_df, target_zips, target_gender=None, target_age_bracket="All",
+                    target_budget=None, aic_size=None, amazon_population_size=None):
     census_df["zip"] = census_df["zip"].astype(str).str.zfill(5)
     census_filtered = census_df[census_df["zip"].isin(target_zips)]
 
-    if target_gender and target_age is not None:
-        age_col = get_age_bracket(target_age).replace("gender", target_gender)
-        pop_target = census_filtered[age_col].sum()
-        pop_total = census_df[age_col].sum()
-    elif target_gender:
-        pop_target = census_filtered[f"{target_gender.capitalize()}_Total"].sum()
-        pop_total = census_df[f"{target_gender.capitalize()}_Total"].sum()
-    elif target_age is not None:
-        age_col = get_age_bracket(target_age).replace("gender", "Total")
-        pop_target = census_filtered[age_col].sum()
-        pop_total = census_df[age_col].sum()
+    # Age / gender handling
+    if target_age_bracket == "All":
+        if target_gender and target_gender != "All":
+            age_col = f"{target_gender.capitalize()}_Total"
+        else:
+            age_col = "Total_Population"
     else:
-        pop_target = census_filtered["Total_Population"].sum()
-        pop_total = census_df["Total_Population"].sum()
+        if target_gender and target_gender != "All":
+            age_col = f"{target_gender}_{target_age_bracket}"
+        else:
+            age_col = f"Total_{target_age_bracket}"
 
+    pop_target = census_filtered[age_col].sum()
+    pop_total = census_df[age_col].sum()
     pop_share = pop_target / pop_total
 
+    # AIC multiplier
     if aic_size is not None and amazon_population_size is not None:
         aic_multiplier = aic_size / amazon_population_size
         pop_share *= aic_multiplier
     else:
         aic_multiplier = 1
 
-    if target_gender:
+    # Deal column handling
+    if target_gender and target_gender != "All":
         reach_col = f"nat_avail_reach_{target_gender.lower()}"
         imp_col = f"nat_avail_imp_{target_gender.lower()}"
         budget_col = f"nat_avail_budget_{target_gender.lower()}"
@@ -120,22 +106,11 @@ def calculate_reach(deals_df, census_df, target_zips, target_gender=None, target
     agg_result = deals_df[["deal", reach_col, imp_col, budget_col, "est_reach", "est_impressions", "est_avail_budget"]
                           + (["budget_feasible"] if target_budget is not None else [])]
 
+    # ZIP-level breakdown
     zip_results = []
     for _, zip_row in census_filtered.iterrows():
-        if target_gender and target_age is not None:
-            pop_target_zip = zip_row[get_age_bracket(target_age).replace("gender", target_gender)]
-            pop_total_zip = pop_total
-        elif target_gender:
-            pop_target_zip = zip_row[f"{target_gender.capitalize()}_Total"]
-            pop_total_zip = pop_total
-        elif target_age is not None:
-            pop_target_zip = zip_row[get_age_bracket(target_age).replace("gender", "Total")]
-            pop_total_zip = pop_total
-        else:
-            pop_target_zip = zip_row["Total_Population"]
-            pop_total_zip = pop_total
-
-        pop_share_zip = pop_target_zip / pop_total_zip
+        pop_target_zip = zip_row[age_col]
+        pop_share_zip = pop_target_zip / pop_total
         if aic_multiplier != 1:
             pop_share_zip *= aic_multiplier
 
@@ -160,12 +135,25 @@ st.sidebar.header("Inputs")
 origin_zip = st.sidebar.text_input("Origin ZIP", "10001")
 radius = st.sidebar.number_input("Radius (miles)", min_value=1, value=10)
 target_gender = st.sidebar.selectbox("Target Gender", ["Male", "Female", "All"])
-target_age = st.sidebar.number_input("Target Age", min_value=0, max_value=120, value=30)
+
+# Age Range dropdown instead of number input
+age_brackets = [
+    "All",
+    "Under 18",
+    "18-24",
+    "25-34",
+    "35-44",
+    "45-54",
+    "55-64",
+    "65+"
+]
+target_age_bracket = st.sidebar.selectbox("Target Age Range", age_brackets)
+
 campaign_budget = st.sidebar.number_input("Campaign Budget", min_value=0, value=10000)
 aic_size = st.sidebar.number_input("AIC Size", min_value=1, value=25)
 amazon_population_size = st.sidebar.number_input("Amazon Population Size", min_value=1, value=50)
 
-# New: Deal selector
+# Deal selector
 deal_list = ["All"] + sorted(deals["deal"].unique().tolist())
 selected_deal = st.sidebar.selectbox("Select Deal", deal_list)
 
@@ -178,8 +166,11 @@ if run_btn:
         target_zips = nearby_census["zip"].tolist()
 
         result_df, zip_result_df, share = calculate_reach(
-            deals, census, target_zips, None if target_gender == "All" else target_gender,
-            target_age, campaign_budget, aic_size=aic_size,
+            deals, census, target_zips,
+            None if target_gender == "All" else target_gender,
+            target_age_bracket,
+            campaign_budget,
+            aic_size=aic_size,
             amazon_population_size=amazon_population_size
         )
 
