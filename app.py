@@ -116,8 +116,6 @@ def get_age_bracket(age):
     else:
         return f"gender_65+"
 
-display(census)
-
 def calculate_reach(deals_df, census_df, target_zips, target_gender=None, target_age=None, target_budget=None, aic_size=None, amazon_population_size=None):
     # Ensure zip formatting
     census_df["zip"] = census_df["zip"].astype(str).str.zfill(5)
@@ -212,13 +210,6 @@ def calculate_reach(deals_df, census_df, target_zips, target_gender=None, target
     zip_result_df = pd.concat(zip_results, ignore_index=True)
 
     return agg_result, zip_result_df, pop_share
-
-target_gender = input("Enter target gender (Male/Female/Leave blank): ")
-target_age = input("Enter target age: ")
-campaign_budget = float(input("Enter campaign budget: "))
-
-target_zip = input("Enter your target zip: ")
-radius = input("Enter radius(in miles): ")
 
 nearby_census = zips_within_radius_from_zip(origin_zip, radius)
 # Create list of ZIPs
