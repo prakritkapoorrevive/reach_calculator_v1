@@ -164,6 +164,11 @@ target_age = st.sidebar.number_input("Target Age", min_value=0, max_value=120, v
 campaign_budget = st.sidebar.number_input("Campaign Budget", min_value=0, value=10000)
 aic_size = st.sidebar.number_input("AIC Size", min_value=1, value=25)
 amazon_population_size = st.sidebar.number_input("Amazon Population Size", min_value=1, value=50)
+
+# New: Deal selector
+deal_list = ["All"] + sorted(deals["deal"].unique().tolist())
+selected_deal = st.sidebar.selectbox("Select Deal", deal_list)
+
 run_btn = st.sidebar.button("Run Calculation")
 
 # --- Run ---
@@ -177,6 +182,10 @@ if run_btn:
             target_age, campaign_budget, aic_size=aic_size,
             amazon_population_size=amazon_population_size
         )
+
+        if selected_deal != "All":
+            result_df = result_df[result_df["deal"] == selected_deal]
+            zip_result_df = zip_result_df[zip_result_df["deal"] == selected_deal]
 
         st.success(f"Population share: {share:.2%}")
 
