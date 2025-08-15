@@ -1,8 +1,9 @@
 # Reach Calculator Streamlit App
 
-Runs the original reach_calculator_v1_test logic as a Streamlit app.
-All CSVs are preloaded so it works instantly on Streamlit Cloud.
-## How to run locally:
+This app uses the exact `calculate_reach` function and helpers from the original notebook.
+Place `census_data_cleaned.csv`, `zip_data_trimmed.csv`, and `deals_data_cleaned.csv` in the same folder before running.
+
+Run locally:
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
