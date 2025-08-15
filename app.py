@@ -224,7 +224,7 @@ nearby_census = zips_within_radius_from_zip(origin_zip, radius)
 # Create list of ZIPs
 target_zips = nearby_census["zip"].tolist()
 
-result_df, zip_result_df, share = calculate_reach(deals, census, target_zips, target_gender, target_age, campaign_budget, aic_size = 25,  = 50)
+result_df, zip_result_df, share = calculate_reach(deals, census, target_zips, target_gender, target_age, campaign_budget, aic_size, second_param)
 
 print(f"Population share: {share:.2%}")
 
